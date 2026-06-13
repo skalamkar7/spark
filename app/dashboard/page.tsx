@@ -84,7 +84,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats */}
-        <StatsCards stats={stats} />
+        <StatsCards
+          totalClients={stats.totalClients}
+          totalPolicies={stats.totalPolicies}
+          urgentReminders={stats.urgentReminders}
+          dueThisWeek={stats.dueThisWeek}
+        />
 
         {/* Reminders */}
         <div className="space-y-4">

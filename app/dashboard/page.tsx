@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Plus } from "lucide-react";
+import { LogOut, Plus, Users, FileText, AlertTriangle, Clock } from "lucide-react";
 import { Header } from "@/components/insurance/header";
-import { StatsCards } from "@/components/insurance/stats-cards";
+import { InteractiveStats } from "@/components/insurance/interactive-stats";
 import { ReminderList } from "@/components/insurance/reminder-list";
 import { AddClientDialog } from "@/components/insurance/add-client-dialog";
 import { AddPolicyDialog } from "@/components/insurance/add-policy-dialog";
@@ -41,6 +41,13 @@ export default function DashboardPage() {
       return;
     }
     setUser(JSON.parse(currentUser));
+
+    // Load from localStorage or use mock data
+    const storedPolicies = localStorage.getItem("policies");
+    const storedClients = localStorage.getItem("clients");
+
+    if (storedPolicies) setPolicies(JSON.parse(storedPolicies));
+    if (storedClients) setClients(JSON.parse(storedClients));
   }, [router]);
 
   if (!user) {
@@ -69,11 +76,19 @@ export default function DashboardPage() {
   };
 
   const handleAddClient = (client: Client) => {
-    setClients((prev) => [...prev, client]);
+    setClients((prev) => {
+      const updated = [...prev, client];
+      localStorage.setItem("clients", JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const handleAddPolicy = (policy: InsurancePolicy) => {
-    setPolicies((prev) => [...prev, policy]);
+    setPolicies((prev) => {
+      const updated = [...prev, policy];
+      localStorage.setItem("policies", JSON.stringify(updated));
+      return updated;
+    });
   };
 
   return (
@@ -116,11 +131,15 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats */}
-        <StatsCards
+        <InteractiveStats
           totalClients={stats.totalClients}
           totalPolicies={stats.totalPolicies}
           urgentReminders={stats.urgentReminders}
           dueThisWeek={stats.dueThisWeek}
+          onClientClick={() => router.push("/clients")}
+          onPoliciesClick={() => router.push("/policies")}
+          onUrgentClick={() => setReminderFilter("3days")}
+          onDueWeekClick={() => setReminderFilter("7days")}
         />
 
         {/* Reminders */}

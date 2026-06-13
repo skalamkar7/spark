@@ -6,6 +6,6 @@ export const metadata = {
 }
 
 export default function Page() {
-  // Redirect to demo page
-  redirect('/demo')
+  // Redirect to login page
+  redirect('/login')
 }

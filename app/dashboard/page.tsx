@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Plus, Users, FileText, AlertTriangle, Clock } from "lucide-react";
+import { LogOut, Plus, Users, FileText, AlertTriangle, Clock, Settings } from "lucide-react";
 import { Header } from "@/components/insurance/header";
 import { InteractiveStats } from "@/components/insurance/interactive-stats";
 import { ReminderList } from "@/components/insurance/reminder-list";
@@ -121,6 +121,14 @@ export default function DashboardPage() {
             </Button>
             <Button
               variant="outline"
+              onClick={() => router.push("/providers")}
+              className="gap-2"
+            >
+              <Settings className="w-4 h-4" />
+              Providers
+            </Button>
+            <Button
+              variant="outline"
               onClick={handleLogout}
               className="gap-2"
             >
@@ -136,8 +144,8 @@ export default function DashboardPage() {
           totalPolicies={stats.totalPolicies}
           urgentReminders={stats.urgentReminders}
           dueThisWeek={stats.dueThisWeek}
-          onClientClick={() => router.push("/clients")}
-          onPoliciesClick={() => router.push("/policies")}
+          onClientClick={() => router.push("/clients-manage")}
+          onPoliciesClick={() => router.push("/policies-manage")}
           onUrgentClick={() => setReminderFilter("3days")}
           onDueWeekClick={() => setReminderFilter("7days")}
         />

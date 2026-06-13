@@ -4,6 +4,18 @@ export type PolicyStatus = "active" | "expiring-soon" | "expired";
 
 export type ReminderInterval = "1day" | "3days" | "1week" | "2weeks" | "1month" | "2months";
 
+export interface InsuranceProvider {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+  logo?: string;
+  qrCode?: string; // Base64 or URL
+  agentQrCode?: string; // QR code for agent's payment link
+  createdAt: string;
+}
+
 export interface ReminderSettings {
   enabled: boolean;
   intervals: ReminderInterval[];
@@ -43,7 +55,7 @@ export interface InsurancePolicy {
   clientId: string;
   name: string;
   type: InsuranceType;
-  provider: string;
+  providerId: string; // Changed to providerId to link to provider
   policyNumber: string;
   premium: number;
   premiumFrequency: "monthly" | "quarterly" | "yearly";
@@ -132,13 +144,96 @@ const getDateFromNow = (days: number): string => {
   return date.toISOString().split("T")[0];
 };
 
+export const mockProviders: InsuranceProvider[] = [
+  {
+    id: "p1",
+    name: "HDFC Ergo",
+    email: "info@hdfcergo.com",
+    phone: "+91 1800 123 0123",
+    website: "www.hdfcergo.com",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "p2",
+    name: "ICICI Lombard",
+    email: "support@icicilombard.com",
+    phone: "+91 1860 500 5555",
+    website: "www.icicilombard.com",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "p3",
+    name: "Bajaj Allianz",
+    email: "support@bajajallianz.com",
+    phone: "+91 1800 209 0144",
+    website: "www.bajajallianz.com",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "p4",
+    name: "LIC",
+    email: "info@licindia.com",
+    phone: "+91 1800 22 5959",
+    website: "www.licindia.com",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "p5",
+    name: "Tata AIG",
+    email: "customercare@tataaig.com",
+    phone: "+91 1800 22 9408",
+    website: "www.tataaig.com",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "p6",
+    name: "Star Health",
+    email: "support@starhealth.in",
+    phone: "+91 1800 425 2255",
+    website: "www.starhealth.in",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "p7",
+    name: "New India Assurance",
+    email: "customercare@newindia.co.in",
+    phone: "+91 1800 11 2378",
+    website: "www.newindia.co.in",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "p8",
+    name: "Royal Sundaram",
+    email: "customersupport@royalsundaram.com",
+    phone: "+91 1800 22 0000",
+    website: "www.royalsundaram.com",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "p9",
+    name: "Max Bupa",
+    email: "customercare@maxbupa.com",
+    phone: "+91 1800 102 1111",
+    website: "www.maxbupa.com",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "p10",
+    name: "SBI General",
+    email: "support@sbigeneral.com",
+    phone: "+91 1800 22 7272",
+    website: "www.sbigeneral.com",
+    createdAt: "2024-01-01",
+  },
+];
+
 export const mockPolicies: InsurancePolicy[] = [
   {
     id: "1",
     clientId: "c1",
     name: "Family Health Plan",
     type: "health",
-    provider: "HDFC Ergo",
+    providerId: "p1",
     policyNumber: "HS-2024-001234",
     premium: 25000,
     premiumFrequency: "yearly",
@@ -159,7 +254,7 @@ export const mockPolicies: InsurancePolicy[] = [
     clientId: "c1",
     name: "Motor Insurance - Honda City",
     type: "auto",
-    provider: "ICICI Lombard",
+    providerId: "p2",
     policyNumber: "AU-2024-005678",
     premium: 12000,
     premiumFrequency: "yearly",
@@ -179,7 +274,7 @@ export const mockPolicies: InsurancePolicy[] = [
     clientId: "c2",
     name: "Home Insurance",
     type: "home",
-    provider: "Bajaj Allianz",
+    providerId: "p3",
     policyNumber: "HO-2023-009012",
     premium: 8000,
     premiumFrequency: "yearly",
@@ -199,7 +294,7 @@ export const mockPolicies: InsurancePolicy[] = [
     clientId: "c3",
     name: "Term Life Insurance",
     type: "life",
-    provider: "LIC",
+    providerId: "p4",
     policyNumber: "LF-2022-003456",
     premium: 15000,
     premiumFrequency: "yearly",
@@ -220,7 +315,7 @@ export const mockPolicies: InsurancePolicy[] = [
     clientId: "c4",
     name: "Travel Insurance",
     type: "travel",
-    provider: "Tata AIG",
+    providerId: "p5",
     policyNumber: "TR-2024-007890",
     premium: 5000,
     premiumFrequency: "yearly",
@@ -240,7 +335,7 @@ export const mockPolicies: InsurancePolicy[] = [
     clientId: "c2",
     name: "Health Insurance - Individual",
     type: "health",
-    provider: "Star Health",
+    providerId: "p6",
     policyNumber: "HS-2024-002345",
     premium: 18000,
     premiumFrequency: "yearly",
@@ -260,7 +355,7 @@ export const mockPolicies: InsurancePolicy[] = [
     clientId: "c5",
     name: "Business Insurance",
     type: "business",
-    provider: "New India Assurance",
+    providerId: "p7",
     policyNumber: "BI-2024-008901",
     premium: 45000,
     premiumFrequency: "yearly",
@@ -281,7 +376,7 @@ export const mockPolicies: InsurancePolicy[] = [
     clientId: "c3",
     name: "Motor Insurance - Maruti Swift",
     type: "auto",
-    provider: "Royal Sundaram",
+    providerId: "p8",
     policyNumber: "AU-2024-006789",
     premium: 8500,
     premiumFrequency: "yearly",
@@ -301,7 +396,7 @@ export const mockPolicies: InsurancePolicy[] = [
     clientId: "c4",
     name: "Critical Illness Cover",
     type: "health",
-    provider: "Max Bupa",
+    providerId: "p9",
     policyNumber: "HS-2024-003456",
     premium: 32000,
     premiumFrequency: "yearly",
@@ -322,7 +417,7 @@ export const mockPolicies: InsurancePolicy[] = [
     clientId: "c5",
     name: "Personal Accident Cover",
     type: "life",
-    provider: "SBI General",
+    providerId: "p10",
     policyNumber: "PA-2024-007890",
     premium: 6000,
     premiumFrequency: "yearly",
@@ -396,6 +491,10 @@ export const getClientById = (clients: Client[], clientId: string) => {
   return clients.find((c) => c.id === clientId);
 };
 
+export const getProviderById = (providers: InsuranceProvider[], providerId: string) => {
+  return providers.find((p) => p.id === providerId);
+};
+
 export const getPoliciesByClient = (policies: InsurancePolicy[], clientId: string) => {
   return policies.filter((p) => p.clientId === clientId);
 };
@@ -403,6 +502,7 @@ export const getPoliciesByClient = (policies: InsurancePolicy[], clientId: strin
 export interface ReminderItem {
   policy: InsurancePolicy;
   client: Client;
+  provider?: InsuranceProvider;
   daysUntil: number;
   reminderType: "payment" | "expiry";
   dueDate: string;
@@ -465,10 +565,11 @@ export const getRemindersForFilter = (
   return reminders.sort((a, b) => a.daysUntil - b.daysUntil);
 };
 
-export const generateWhatsAppMessage = (reminder: ReminderItem, agentName: string = "Your Insurance Advisor"): string => {
-  const { policy, client, daysUntil, reminderType } = reminder;
+export const generateWhatsAppMessage = (reminder: ReminderItem, agentName: string = "Your Insurance Advisor", qrCodeUrl?: string): string => {
+  const { policy, client, provider, daysUntil, reminderType } = reminder;
   const dueText = daysUntil === 0 ? "today" : daysUntil === 1 ? "tomorrow" : `in ${daysUntil} days`;
   const dueDate = formatDate(reminderType === "payment" ? policy.nextPaymentDate : policy.endDate);
+  const providerName = provider?.name || "Insurance Provider";
 
   if (reminderType === "payment") {
     return `Dear ${client.name},
@@ -477,11 +578,12 @@ This is a friendly reminder that your *${policy.name}* premium payment of *${for
 
 *Policy Details:*
 • Policy No: ${policy.policyNumber}
-• Provider: ${policy.provider}
+• Provider: ${providerName}
 • Type: ${policy.type.charAt(0).toUpperCase() + policy.type.slice(1)} Insurance
 • Coverage: ${formatCurrency(policy.coverageAmount)}
 
 Please ensure timely payment to keep your policy active and maintain continuous coverage.
+${qrCodeUrl ? "\n📱 Scan the QR code below for quick payment" : ""}
 
 For any assistance, feel free to contact me.
 
@@ -494,7 +596,7 @@ This is a reminder that your *${policy.name}* policy is due for renewal ${dueTex
 
 *Policy Details:*
 • Policy No: ${policy.policyNumber}
-• Provider: ${policy.provider}
+• Provider: ${providerName}
 • Type: ${policy.type.charAt(0).toUpperCase() + policy.type.slice(1)} Insurance
 • Current Premium: ${formatCurrency(policy.premium)} (${policy.premiumFrequency})
 • Coverage: ${formatCurrency(policy.coverageAmount)}
@@ -522,10 +624,11 @@ export const generateEmailSubject = (reminder: ReminderItem): string => {
   }
 };
 
-export const generateEmailBody = (reminder: ReminderItem, agentName: string = "Your Insurance Advisor", agentPhone: string = ""): string => {
-  const { policy, client, daysUntil, reminderType } = reminder;
+export const generateEmailBody = (reminder: ReminderItem, agentName: string = "Your Insurance Advisor", agentPhone: string = "", qrCodeUrl?: string): string => {
+  const { policy, client, provider, daysUntil, reminderType } = reminder;
   const dueText = daysUntil === 0 ? "today" : daysUntil === 1 ? "tomorrow" : `in ${daysUntil} days`;
   const dueDate = formatDate(reminderType === "payment" ? policy.nextPaymentDate : policy.endDate);
+  const providerName = provider?.name || "Insurance Provider";
 
   if (reminderType === "payment") {
     return `Dear ${client.name},
@@ -539,13 +642,14 @@ PAYMENT DETAILS
 Policy Name:     ${policy.name}
 Policy Number:   ${policy.policyNumber}
 Insurance Type:  ${policy.type.charAt(0).toUpperCase() + policy.type.slice(1)}
-Provider:        ${policy.provider}
+Provider:        ${providerName}
 Premium Amount:  ${formatCurrency(policy.premium)}
 Due Date:        ${dueDate}
 Coverage:        ${formatCurrency(policy.coverageAmount)}
 ────────────────────────────────────────
 
 Please ensure timely payment to maintain continuous coverage and avoid any policy lapse.
+${qrCodeUrl ? "\n📱 [Quick Payment QR Code attached] - Scan to pay instantly" : ""}
 
 If you have already made the payment, please disregard this reminder.
 
@@ -565,7 +669,7 @@ POLICY DETAILS
 Policy Name:     ${policy.name}
 Policy Number:   ${policy.policyNumber}
 Insurance Type:  ${policy.type.charAt(0).toUpperCase() + policy.type.slice(1)}
-Provider:        ${policy.provider}
+Provider:        ${providerName}
 Renewal Date:    ${dueDate}
 Current Premium: ${formatCurrency(policy.premium)} (${policy.premiumFrequency})
 Coverage:        ${formatCurrency(policy.coverageAmount)}
@@ -577,7 +681,7 @@ Benefits of timely renewal:
 • Avoid re-underwriting requirements
 • Maintain policy continuity
 
-I would be happy to assist you with reviewing your current coverage and exploring renewal options.
+${qrCodeUrl ? "📱 [Quick Payment QR Code attached] - Scan to initiate renewal\n" : ""}I would be happy to assist you with reviewing your current coverage and exploring renewal options.
 
 Please contact me at your earliest convenience to ensure uninterrupted protection.
 

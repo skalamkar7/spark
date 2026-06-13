@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +29,8 @@ import {
   ReminderInterval,
   reminderIntervalLabels,
   defaultReminderSettings,
+  InsuranceProvider,
+  mockProviders,
 } from "@/lib/insurance-data";
 
 interface AddPolicyDialogProps {
@@ -53,11 +55,18 @@ export function AddPolicyDialog({
   onAddPolicy,
   clients,
 }: AddPolicyDialogProps) {
+  const [providers, setProviders] = useState<InsuranceProvider[]>([]);
+
+  useEffect(() => {
+    const storedProviders = localStorage.getItem("providers");
+    setProviders(storedProviders ? JSON.parse(storedProviders) : mockProviders);
+  }, []);
+
   const [formData, setFormData] = useState({
     clientId: "",
     name: "",
     type: "health" as InsuranceType,
-    provider: "",
+    providerId: "",
     policyNumber: "",
     premium: "",
     premiumFrequency: "yearly" as "monthly" | "quarterly" | "yearly",
@@ -86,7 +95,7 @@ export function AddPolicyDialog({
       clientId: formData.clientId,
       name: formData.name,
       type: formData.type,
-      provider: formData.provider,
+      providerId: formData.providerId,
       policyNumber: formData.policyNumber,
       premium: parseFloat(formData.premium),
       premiumFrequency: formData.premiumFrequency,
@@ -109,7 +118,7 @@ export function AddPolicyDialog({
       clientId: "",
       name: "",
       type: "health",
-      provider: "",
+      providerId: "",
       policyNumber: "",
       premium: "",
       premiumFrequency: "yearly",
@@ -193,15 +202,28 @@ export function AddPolicyDialog({
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="provider">Insurance Provider *</Label>
-                <Input
-                  id="provider"
-                  placeholder="e.g., HDFC Ergo"
-                  value={formData.provider}
-                  onChange={(e) =>
-                    setFormData({ ...formData, provider: e.target.value })
+                <Select
+                  value={formData.providerId}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, providerId: value })
                   }
-                  required
-                />
+                >
+                  <SelectTrigger id="provider">
+                    <SelectValue placeholder="Select an insurance provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {providers.map((provider) => (
+                      <SelectItem key={provider.id} value={provider.id}>
+                        {provider.name}
+                      </SelectItem>
+                    ))}
+                    {providers.length === 0 && (
+                      <SelectItem value="none" disabled>
+                        No providers available
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Calendar,
   Filter,
@@ -9,6 +9,8 @@ import {
   Users,
   FileText,
   ChevronDown,
+  RotateCcw,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,42 +60,54 @@ import {
   formatCurrency,
   getPoliciesByClient,
 } from "@/lib/insurance-data";
+import { useLocalStorage } from "@/lib/storage";
 
 export default function InsuranceReminderDashboard() {
-  const [policies, setPolicies] = useState<InsurancePolicy[]>(mockPolicies);
-  const [clients, setClients] = useState<Client[]>(mockClients);
+  const storage = useLocalStorage();
+  const [policies, setPolicies] = useState<InsurancePolicy[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [reminderFilter, setReminderFilter] = useState("7days");
   const [activeTab, setActiveTab] = useState("reminders");
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Dialog states
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addClientOpen, setAddClientOpen] = useState(false);
   const [addPolicyOpen, setAddPolicyOpen] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
-  // Agent settings
-  const [agentName, setAgentName] = useState("Rahul Verma");
-  const [agentPhone, setAgentPhone] = useState("+91 99999 88888");
+  const [agentName, setAgentName] = useState("Your Name");
+  const [agentPhone, setAgentPhone] = useState("+91 XXXXX XXXXX");
   const [tempAgentName, setTempAgentName] = useState(agentName);
   const [tempAgentPhone, setTempAgentPhone] = useState(agentPhone);
 
-  // Get reminders based on selected filter
+  useEffect(() => {
+    const savedPolicies = storage.getPolicies();
+    const savedClients = storage.getClients();
+    setPolicies(savedPolicies);
+    setClients(savedClients);
+    setIsLoading(false);
+  }, [storage]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      storage.savePolicies(policies);
+    }
+  }, [policies, isLoading, storage]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      storage.saveClients(clients);
+    }
+  }, [clients, isLoading, storage]);
+
   const reminders = useMemo(() => {
     return getRemindersForFilter(policies, clients, reminderFilter);
   }, [policies, clients, reminderFilter]);
 
-  // Calculate stats
   const stats = useMemo(() => {
     const activePolicies = policies.filter((p) => p.status !== "expired");
-    const urgentReminders = getRemindersForFilter(
-      policies,
-      clients,
-      "3days"
-    ).length;
-    const weekReminders = getRemindersForFilter(
-      policies,
-      clients,
-      "7days"
-    ).length;
+    const urgentReminders = getRemindersForFilter(policies, clients, "3days").length;
+    const weekReminders = getRemindersForFilter(policies, clients, "7days").length;
 
     return {
       totalClients: clients.length,
@@ -146,9 +160,31 @@ export default function InsuranceReminderDashboard() {
     );
   };
 
-  const currentFilter = REMINDER_FILTER_OPTIONS.find(
-    (f) => f.value === reminderFilter
-  );
+  const handleLoadDemoData = () => {
+    setPolicies(mockPolicies);
+    setClients(mockClients);
+    setResetDialogOpen(false);
+  };
+
+  const handleResetAllData = () => {
+    setPolicies([]);
+    setClients([]);
+    storage.clearAll();
+    setResetDialogOpen(false);
+  };
+
+  const currentFilter = REMINDER_FILTER_OPTIONS.find((f) => f.value === reminderFilter);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading your data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -163,12 +199,9 @@ export default function InsuranceReminderDashboard() {
       />
 
       <main className="container mx-auto px-4 py-6 max-w-6xl">
-        {/* Page Header with Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              Insurance Dashboard
-            </h1>
+            <h1 className="text-2xl font-bold text-foreground">Insurance Dashboard</h1>
             <p className="text-muted-foreground mt-1">
               Manage clients, policies, and send reminders
             </p>
@@ -197,7 +230,6 @@ export default function InsuranceReminderDashboard() {
           </div>
         </div>
 
-        {/* Stats Cards */}
         <StatsCards
           totalClients={stats.totalClients}
           totalPolicies={stats.totalPolicies}
@@ -205,7 +237,6 @@ export default function InsuranceReminderDashboard() {
           dueThisWeek={stats.dueThisWeek}
         />
 
-        {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
           <TabsList className="grid w-full grid-cols-3 mb-4">
             <TabsTrigger value="reminders" className="gap-2">
@@ -234,7 +265,6 @@ export default function InsuranceReminderDashboard() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Reminders Tab */}
           <TabsContent value="reminders">
             <Card>
               <CardHeader className="pb-4">
@@ -245,22 +275,17 @@ export default function InsuranceReminderDashboard() {
                       Pending Reminders
                     </CardTitle>
                     <CardDescription className="mt-1">
-                      {reminders.length} reminder
-                      {reminders.length !== 1 ? "s" : ""}{" "}
+                      {reminders.length} reminder{reminders.length !== 1 ? "s" : ""}{" "}
                       {currentFilter?.label.toLowerCase()}
                     </CardDescription>
                   </div>
 
-                  {/* Filter Dropdown */}
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Filter className="w-4 h-4" />
                       <span className="hidden sm:inline">Show due in:</span>
                     </div>
-                    <Select
-                      value={reminderFilter}
-                      onValueChange={setReminderFilter}
-                    >
+                    <Select value={reminderFilter} onValueChange={setReminderFilter}>
                       <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Select period" />
                       </SelectTrigger>
@@ -286,42 +311,30 @@ export default function InsuranceReminderDashboard() {
               </CardContent>
             </Card>
 
-            {/* Quick Stats by Period */}
             <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              {REMINDER_FILTER_OPTIONS.filter((f) => f.value !== "all").map(
-                (option) => {
-                  const count = getRemindersForFilter(
-                    policies,
-                    clients,
-                    option.value
-                  ).length;
-                  const isActive = reminderFilter === option.value;
-                  return (
-                    <button
-                      key={option.value}
-                      onClick={() => setReminderFilter(option.value)}
-                      className={`p-3 rounded-lg border text-left transition-colors ${
-                        isActive
-                          ? "border-primary bg-primary/5"
-                          : "border-border bg-card hover:border-primary/50"
-                      }`}
-                    >
-                      <p
-                        className={`text-2xl font-bold ${isActive ? "text-primary" : "text-foreground"}`}
-                      >
-                        {count}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {option.label}
-                      </p>
-                    </button>
-                  );
-                }
-              )}
+              {REMINDER_FILTER_OPTIONS.filter((f) => f.value !== "all").map((option) => {
+                const count = getRemindersForFilter(policies, clients, option.value).length;
+                const isActive = reminderFilter === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    onClick={() => setReminderFilter(option.value)}
+                    className={`p-3 rounded-lg border text-left transition-colors ${
+                      isActive
+                        ? "border-primary bg-primary/5"
+                        : "border-border bg-card hover:border-primary/50"
+                    }`}
+                  >
+                    <p className={`text-2xl font-bold ${isActive ? "text-primary" : "text-foreground"}`}>
+                      {count}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{option.label}</p>
+                  </button>
+                );
+              })}
             </div>
           </TabsContent>
 
-          {/* Clients Tab */}
           <TabsContent value="clients">
             <Card>
               <CardHeader>
@@ -332,8 +345,7 @@ export default function InsuranceReminderDashboard() {
                       All Clients
                     </CardTitle>
                     <CardDescription>
-                      {clients.length} registered client
-                      {clients.length !== 1 ? "s" : ""}
+                      {clients.length} registered client{clients.length !== 1 ? "s" : ""}
                     </CardDescription>
                   </div>
                   <Button onClick={() => setAddClientOpen(true)} className="gap-2">
@@ -345,10 +357,9 @@ export default function InsuranceReminderDashboard() {
               <CardContent>
                 <div className="space-y-3">
                   {clients.map((client) => {
-                    const clientPolicies = getPoliciesByClient(
-                      policies,
-                      client.id
-                    ).filter((p) => p.status !== "expired");
+                    const clientPolicies = getPoliciesByClient(policies, client.id).filter(
+                      (p) => p.status !== "expired"
+                    );
                     return (
                       <div
                         key={client.id}
@@ -359,9 +370,7 @@ export default function InsuranceReminderDashboard() {
                             {client.name.charAt(0)}
                           </div>
                           <div>
-                            <h4 className="font-semibold text-foreground">
-                              {client.name}
-                            </h4>
+                            <h4 className="font-semibold text-foreground">{client.name}</h4>
                             <p className="text-sm text-muted-foreground">
                               {client.phone} | {client.email}
                             </p>
@@ -369,8 +378,7 @@ export default function InsuranceReminderDashboard() {
                         </div>
                         <div className="text-right">
                           <p className="font-medium text-foreground">
-                            {clientPolicies.length} Polic
-                            {clientPolicies.length !== 1 ? "ies" : "y"}
+                            {clientPolicies.length} Polic{clientPolicies.length !== 1 ? "ies" : "y"}
                           </p>
                           <p className="text-sm text-muted-foreground">
                             Since {formatDate(client.createdAt)}
@@ -382,9 +390,7 @@ export default function InsuranceReminderDashboard() {
                   {clients.length === 0 && (
                     <div className="text-center py-12">
                       <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                      <h3 className="font-medium text-foreground mb-1">
-                        No clients yet
-                      </h3>
+                      <h3 className="font-medium text-foreground mb-1">No clients yet</h3>
                       <p className="text-sm text-muted-foreground mb-4">
                         Add your first client to get started
                       </p>
@@ -399,7 +405,6 @@ export default function InsuranceReminderDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Policies Tab */}
           <TabsContent value="policies">
             <Card>
               <CardHeader>
@@ -410,12 +415,8 @@ export default function InsuranceReminderDashboard() {
                       All Policies
                     </CardTitle>
                     <CardDescription>
-                      {policies.filter((p) => p.status !== "expired").length}{" "}
-                      active polic
-                      {policies.filter((p) => p.status !== "expired").length !==
-                      1
-                        ? "ies"
-                        : "y"}
+                      {policies.filter((p) => p.status !== "expired").length} active polic
+                      {policies.filter((p) => p.status !== "expired").length !== 1 ? "ies" : "y"}
                     </CardDescription>
                   </div>
                   <Button onClick={() => setAddPolicyOpen(true)} className="gap-2">
@@ -429,9 +430,7 @@ export default function InsuranceReminderDashboard() {
                   {policies
                     .filter((p) => p.status !== "expired")
                     .map((policy) => {
-                      const client = clients.find(
-                        (c) => c.id === policy.clientId
-                      );
+                      const client = clients.find((c) => c.id === policy.clientId);
                       return (
                         <div
                           key={policy.id}
@@ -467,21 +466,17 @@ export default function InsuranceReminderDashboard() {
                             </p>
                             {policy.lastReminderSent && (
                               <p className="text-xs text-green-600 mt-1">
-                                Reminder sent:{" "}
-                                {formatDate(policy.lastReminderSent)}
+                                Reminder sent: {formatDate(policy.lastReminderSent)}
                               </p>
                             )}
                           </div>
                         </div>
                       );
                     })}
-                  {policies.filter((p) => p.status !== "expired").length ===
-                    0 && (
+                  {policies.filter((p) => p.status !== "expired").length === 0 && (
                     <div className="text-center py-12">
                       <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                      <h3 className="font-medium text-foreground mb-1">
-                        No policies yet
-                      </h3>
+                      <h3 className="font-medium text-foreground mb-1">No policies yet</h3>
                       <p className="text-sm text-muted-foreground mb-4">
                         Add your first policy to start tracking
                       </p>
@@ -498,14 +493,12 @@ export default function InsuranceReminderDashboard() {
         </Tabs>
       </main>
 
-      {/* Settings Dialog */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Agent Settings</DialogTitle>
             <DialogDescription>
-              Configure your profile settings. Your details will appear in
-              reminder messages.
+              Configure your profile settings. Your details will appear in reminder messages.
             </DialogDescription>
           </DialogHeader>
 
@@ -529,34 +522,101 @@ export default function InsuranceReminderDashboard() {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              These details will be used as the signature in all reminder
-              messages.
+              These details will be used as the signature in all reminder messages.
             </p>
+
+            <div className="border-t pt-4 mt-6">
+              <h4 className="font-semibold text-sm mb-3 text-foreground">Data Management</h4>
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => {
+                    setSettingsOpen(false);
+                    setResetDialogOpen(true);
+                  }}
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Manage Data
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Load demo data, clear all data, or start fresh
+                </p>
+              </div>
+            </div>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setSettingsOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSaveSettings}>Save Changes</Button>
+            <Button onClick={handleSaveSettings}>Save Settings</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Add Client Dialog */}
       <AddClientDialog
         open={addClientOpen}
         onOpenChange={setAddClientOpen}
         onAddClient={handleAddClient}
       />
 
-      {/* Add Policy Dialog */}
       <AddPolicyDialog
         open={addPolicyOpen}
         onOpenChange={setAddPolicyOpen}
         onAddPolicy={handleAddPolicy}
         clients={clients}
       />
+
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Data Management</DialogTitle>
+            <DialogDescription>Choose how you want to manage your data</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-4">
+            <Button
+              className="w-full justify-start gap-2 h-auto p-3 flex-col items-start"
+              variant="outline"
+              onClick={handleLoadDemoData}
+            >
+              <span className="font-semibold text-sm">Load Demo Data</span>
+              <span className="text-xs text-muted-foreground">
+                Reset to sample clients and policies to see the app in action
+              </span>
+            </Button>
+
+            {(policies.length > 0 || clients.length > 0) && (
+              <Button
+                className="w-full justify-start gap-2 h-auto p-3 flex-col items-start border-destructive"
+                variant="outline"
+                onClick={handleResetAllData}
+              >
+                <span className="font-semibold text-sm text-destructive">Clear All Data</span>
+                <span className="text-xs text-muted-foreground">
+                  Delete all clients and policies (cannot be undone)
+                </span>
+              </Button>
+            )}
+
+            <div className="bg-accent/10 p-3 rounded-lg flex gap-2">
+              <AlertCircle className="w-4 h-4 text-accent-foreground flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-accent-foreground">
+                {policies.length === 0 && clients.length === 0
+                  ? "Start fresh by adding clients and policies, or load demo data to explore features."
+                  : "Your data is automatically saved to your browser. Clear data if you want to start fresh."}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

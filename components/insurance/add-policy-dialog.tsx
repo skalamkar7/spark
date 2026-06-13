@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ClientSelector } from "./client-selector";
 import {
   InsurancePolicy,
   InsuranceType,
@@ -146,27 +147,14 @@ export function AddPolicyDialog({
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             {/* Client Selection */}
-            <div className="grid gap-2">
-              <Label htmlFor="client">Select Client *</Label>
-              <Select
-                value={formData.clientId}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, clientId: value })
-                }
-                required
-              >
-                <SelectTrigger id="client">
-                  <SelectValue placeholder="Choose a client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name} - {client.phone}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <ClientSelector
+              clients={clients}
+              value={formData.clientId}
+              onChange={(value) =>
+                setFormData({ ...formData, clientId: value })
+              }
+              required
+            />
 
             <div className="grid gap-2">
               <Label htmlFor="name">Policy Name *</Label>

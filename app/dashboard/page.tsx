@@ -2,15 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LogOut, Plus } from "lucide-react";
 import { Header } from "@/components/insurance/header";
 import { StatsCards } from "@/components/insurance/stats-cards";
 import { ReminderList } from "@/components/insurance/reminder-list";
+import { AddClientDialog } from "@/components/insurance/add-client-dialog";
+import { AddPolicyDialog } from "@/components/insurance/add-policy-dialog";
 import {
   REMINDER_FILTER_OPTIONS,
   getRemindersForFilter,
   mockClients,
   mockPolicies,
+  InsurancePolicy,
+  Client,
 } from "@/lib/insurance-data";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +29,10 @@ export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [reminderFilter, setReminderFilter] = useState("7days");
+  const [policies, setPolicies] = useState<InsurancePolicy[]>(mockPolicies);
+  const [clients, setClients] = useState<Client[]>(mockClients);
+  const [addClientOpen, setAddClientOpen] = useState(false);
+  const [addPolicyOpen, setAddPolicyOpen] = useState(false);
 
   useEffect(() => {
     const currentUser = localStorage.getItem("currentUser");
@@ -46,8 +54,6 @@ export default function DashboardPage() {
     );
   }
 
-  const policies = mockPolicies;
-  const clients = mockClients;
   const reminders = getRemindersForFilter(policies, clients, reminderFilter);
 
   const stats = {
@@ -62,6 +68,14 @@ export default function DashboardPage() {
     router.push("/login");
   };
 
+  const handleAddClient = (client: Client) => {
+    setClients((prev) => [...prev, client]);
+  };
+
+  const handleAddPolicy = (policy: InsurancePolicy) => {
+    setPolicies((prev) => [...prev, policy]);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header
@@ -71,16 +85,34 @@ export default function DashboardPage() {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Logout Button */}
-        <div className="flex justify-end">
-          <Button
-            variant="outline"
-            onClick={handleLogout}
-            className="gap-2"
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </Button>
+        {/* Top Action Bar */}
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => setAddClientOpen(true)}
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Client
+            </Button>
+            <Button 
+              onClick={() => setAddPolicyOpen(true)}
+              variant="secondary"
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Policy
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleLogout}
+              className="gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -117,6 +149,21 @@ export default function DashboardPage() {
           />
         </div>
       </main>
+
+      {/* Add Client Dialog */}
+      <AddClientDialog
+        open={addClientOpen}
+        onOpenChange={setAddClientOpen}
+        onAddClient={handleAddClient}
+      />
+
+      {/* Add Policy Dialog */}
+      <AddPolicyDialog
+        open={addPolicyOpen}
+        onOpenChange={setAddPolicyOpen}
+        onAddPolicy={handleAddPolicy}
+        clients={clients}
+      />
     </div>
   );
 }

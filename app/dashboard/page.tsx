@@ -166,6 +166,7 @@ export default function DashboardPage() {
 
         {/* Stats */}
         <InteractiveStats
+          key={`${stats.totalPolicies}-${stats.totalClients}`}
           totalClients={stats.totalClients}
           totalPolicies={stats.totalPolicies}
           urgentReminders={stats.urgentReminders}

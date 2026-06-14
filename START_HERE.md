@@ -79,17 +79,46 @@ I've successfully built a **production-ready multi-agent insurance management sy
 - Data Cleanup link
 - Conditional rendering based on admin status
 
-### 6. Documentation (5 Files)
+### 6. Password Reset System
+
+**3 Self-Service Pages:**
+- `/forgot-password` - Request password reset via email
+- `/reset-password?token=` - Reset password with secure token (24-hour expiry)
+- `/change-password` - Forced password change after admin reset
+
+**Admin Capabilities:**
+- Reset any agent's password from admin dashboard
+- Generate 12-character temporary passwords automatically
+- Agents forced to change password on next login
+- Complete audit trail of all password changes
+
+**Security Features:**
+- Secure tokens with 32 bytes of entropy
+- Single-use tokens (expire in 24 hours)
+- Password hashing with Better Auth
+- Session invalidation on password change
+- Audit trail for compliance
+
+**Pages & Features:**
+| Feature | URL | User |
+|---------|-----|------|
+| Forgot Password | `/forgot-password` | Any user |
+| Reset Password | `/reset-password?token=X` | Users with valid token |
+| Change Password | `/change-password` | Users after admin reset |
+| Admin Reset | `/admin/dashboard` | Admin only |
+
+### 7. Documentation (6 Files)
 
 | File | Length | Purpose |
 |------|--------|---------|
+| `PASSWORD_RESET_GUIDE.md` | 464 lines | Complete password reset documentation |
 | `DEPLOYMENT_COMPLETE.md` | 419 lines | Final summary & launch guide |
 | `DEPLOYMENT_PACKAGE_README.md` | 301 lines | Package overview & quick start |
 | `MULTI_AGENT_DEPLOYMENT.md` | 260 lines | Detailed deployment guide |
 | `MULTI_AGENT_IMPLEMENTATION_SUMMARY.md` | 428 lines | What was built & how it works |
 | `QUICK_REFERENCE.md` | 282 lines | 5-minute quick reference |
 
-**Total Documentation**: 1,690 lines of clear, step-by-step guides
+**Total Documentation**: 2,154 lines of clear, step-by-step guides
 
 ---
 
@@ -189,7 +218,54 @@ Remove test/mock data added during development before sharing with real agents
 
 ---
 
-## 🚀 Deployment Steps
+## 🔑 Password Management Features
+
+### Self-Service Password Reset
+
+**Users can:**
+1. Click "Forgot password?" on sign-in page
+2. Enter email address
+3. Receive reset link via email (valid 24 hours)
+4. Set new password
+5. Sign in with new password
+
+**URLs:**
+- Request reset: `/forgot-password`
+- Reset password: `/reset-password?token=<token>`
+
+### Admin Password Reset
+
+**You can:**
+1. Go to `/admin/dashboard`
+2. View approved agents
+3. Click "Reset Password" on any agent
+4. System generates temporary password (e.g., `K9#mPq2$Rx8L`)
+5. Email sent to agent with temporary password
+6. Agent forced to change password on next login
+7. Audit trail shows who reset password and when
+
+**Features:**
+- 12-character temporary passwords with symbols
+- Agents cannot use temp password permanently
+- Forced to set new password on first login
+- Complete audit trail for compliance
+
+### Forced Password Change
+
+**After admin resets password:**
+1. Agent receives temporary password via email
+2. Agent signs in with temp password
+3. System redirects to `/change-password`
+4. Agent must set new password
+5. Agent then has full access to dashboard
+
+**Security:**
+- Cannot skip password change
+- Must change within 7 days
+- New password required (minimum 8 characters)
+- Session continues after change
+
+---
 
 ### 5-Minute Setup
 
@@ -203,6 +279,8 @@ In Vercel Project Settings:
 ```
 ADMIN_EMAIL=your-email@gmail.com
 BETTER_AUTH_SECRET=<openssl rand -base64 32>
+RESEND_API_KEY=<your-resend-api-key>
+SENDER_EMAIL=noreply@yourapp.com
 ```
 
 **3. Approve Yourself** (1 min)

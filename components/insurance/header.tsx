@@ -1,7 +1,8 @@
 "use client";
 
-import { Bell, Shield, Settings, User } from "lucide-react";
+import { Bell, Shield, Settings, User, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,9 +16,10 @@ interface HeaderProps {
   agentName: string;
   onSettingsClick?: () => void;
   pendingReminders?: number;
+  isAdmin?: boolean;
 }
 
-export function Header({ agentName, onSettingsClick, pendingReminders = 0 }: HeaderProps) {
+export function Header({ agentName, onSettingsClick, pendingReminders = 0, isAdmin = false }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -63,6 +65,24 @@ export function Header({ agentName, onSettingsClick, pendingReminders = 0 }: Hea
                 <User className="w-4 h-4 mr-2" />
                 Profile
               </DropdownMenuItem>
+              {isAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs">Admin</DropdownMenuLabel>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/dashboard" className="flex items-center">
+                      <Lock className="w-4 h-4 mr-2" />
+                      Admin Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/data-cleanup" className="flex items-center">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Data Cleanup
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

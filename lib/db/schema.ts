@@ -6,6 +6,7 @@ import {
   integer,
   decimal,
   jsonb,
+  uuid,
 } from "drizzle-orm/pg-core";
 
 // Better Auth tables
@@ -126,4 +127,34 @@ export const agentSettings = pgTable("agent_settings", {
   agentPhone: text("agent_phone"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Multi-user approval workflow tables
+export const agentInfo = pgTable("agent_info", {
+  id: text("id").primaryKey().default(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().unique(),
+  companyName: text("company_name"),
+  phone: text("phone"),
+  gstNumber: text("gst_number"),
+  profilePictureUrl: text("profile_picture_url"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const adminApprovals = pgTable("admin_approvals", {
+  id: text("id").primaryKey().default(() => crypto.randomUUID()),
+  userId: text("user_id").notNull(),
+  adminId: text("admin_id"),
+  action: text("action").notNull(), // 'approved' or 'rejected'
+  reason: text("reason"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const dummyDataTracker = pgTable("dummy_data_tracker", {
+  id: text("id").primaryKey().default(() => crypto.randomUUID()),
+  userId: text("user_id").notNull(),
+  tableName: text("table_name").notNull(),
+  recordId: text("record_id").notNull(),
+  isDummy: boolean("is_dummy").default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });

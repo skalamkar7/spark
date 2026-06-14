@@ -35,7 +35,13 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
       return
     }
 
-    router.push('/')
+    // For signup, redirect to approval pending page
+    // For signin, redirect to dashboard
+    if (isSignUp) {
+      router.push('/approval-pending')
+    } else {
+      router.push('/')
+    }
     router.refresh()
   }
 

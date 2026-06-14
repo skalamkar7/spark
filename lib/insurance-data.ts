@@ -43,11 +43,42 @@ export interface ReminderLog {
 export interface PaymentLog {
   id: string;
   policyId: string;
+  clientId: string;
   amount: number;
   paidAt: string;
   previousDueDate: string;
   newDueDate: string;
+  daysLate: number; // Number of days payment was made after due date
+  paymentStatus: "on-time" | "late" | "partial";
+  paymentMethod?: "cash" | "check" | "transfer" | "card" | "upi";
   notes?: string;
+}
+
+export interface PaymentPattern {
+  policyId: string;
+  clientId: string;
+  lastThreePayments: {
+    daysLate: number;
+    paidDate: string;
+    dueDate: string;
+  }[];
+  averageDaysLate: number;
+  riskLevel: "low" | "medium" | "high";
+  recommendedEarlyReminderDays: number;
+  totalPaymentsRecorded: number;
+}
+
+export interface ReminderHistory {
+  id: string;
+  policyId: string;
+  clientId: string;
+  sentAt: string;
+  sentVia: "email" | "sms" | "whatsapp";
+  reminderType: "payment" | "expiry";
+  dueDate: string;
+  message: string;
+  wasEarlyReminder?: boolean;
+  earlyReminderDaysAdvance?: number;
 }
 
 export interface InsurancePolicy {
@@ -497,6 +528,66 @@ export const getProviderById = (providers: InsuranceProvider[], providerId: stri
 
 export const getPoliciesByClient = (policies: InsurancePolicy[], clientId: string) => {
   return policies.filter((p) => p.clientId === clientId);
+};
+
+export const calculatePaymentPattern = (
+  paymentLogs: PaymentLog[],
+  policyId: string
+): PaymentPattern => {
+  const policyPayments = paymentLogs.filter((p) => p.policyId === policyId);
+  const lastThree = policyPayments.slice(-3).map((p) => ({
+    daysLate: p.daysLate,
+    paidDate: p.paidAt,
+    dueDate: p.previousDueDate,
+  }));
+
+  const averageDaysLate =
+    lastThree.length > 0
+      ? Math.round(lastThree.reduce((sum, p) => sum + p.daysLate, 0) / lastThree.length)
+      : 0;
+
+  let riskLevel: "low" | "medium" | "high" = "low";
+  let recommendedEarlyReminderDays = 0;
+
+  if (averageDaysLate > 0) {
+    if (averageDaysLate >= 10) {
+      riskLevel = "high";
+      recommendedEarlyReminderDays = Math.min(averageDaysLate + 2, 7);
+    } else if (averageDaysLate >= 5) {
+      riskLevel = "medium";
+      recommendedEarlyReminderDays = Math.min(averageDaysLate + 1, 5);
+    } else {
+      riskLevel = "low";
+      recommendedEarlyReminderDays = 2;
+    }
+  }
+
+  const clientId = policyPayments[0]?.clientId || "";
+
+  return {
+    policyId,
+    clientId,
+    lastThreePayments: lastThree,
+    averageDaysLate,
+    riskLevel,
+    recommendedEarlyReminderDays,
+    totalPaymentsRecorded: policyPayments.length,
+  };
+};
+
+export const calculateClientRiskLevel = (
+  paymentLogs: PaymentLog[],
+  clientId: string
+): "low" | "medium" | "high" => {
+  const clientPayments = paymentLogs.filter((p) => p.clientId === clientId);
+  if (clientPayments.length === 0) return "low";
+
+  const lastThree = clientPayments.slice(-3);
+  const averageDaysLate = Math.round(lastThree.reduce((sum, p) => sum + p.daysLate, 0) / lastThree.length);
+
+  if (averageDaysLate >= 10) return "high";
+  if (averageDaysLate >= 5) return "medium";
+  return "low";
 };
 
 export interface ReminderItem {

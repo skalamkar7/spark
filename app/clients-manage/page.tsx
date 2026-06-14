@@ -6,6 +6,7 @@ import { ChevronLeft, Mail, Phone, MapPin, FileText, Edit, Trash2, Search } from
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { EditClientDialog } from "@/components/insurance/edit-client-dialog";
 import {
   Client,
   InsurancePolicy,
@@ -29,6 +30,7 @@ export default function ClientsManagePage() {
   const [policies, setPolicies] = useState<InsurancePolicy[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
+  const [editClientOpen, setEditClientOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
@@ -63,6 +65,13 @@ export default function ClientsManagePage() {
     const updated = clients.filter((c) => c.id !== clientId);
     setClients(updated);
     setSelectedClient(null);
+    localStorage.setItem("clients", JSON.stringify(updated));
+  };
+
+  const handleUpdateClient = (updatedClient: Client) => {
+    const updated = clients.map((c) => (c.id === updatedClient.id ? updatedClient : c));
+    setClients(updated);
+    setSelectedClient(updatedClient);
     localStorage.setItem("clients", JSON.stringify(updated));
   };
 
@@ -157,7 +166,7 @@ export default function ClientsManagePage() {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="icon" className="h-8 w-8">
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditClientOpen(true)}>
                         <Edit className="w-4 h-4" />
                       </Button>
                       <Button
@@ -262,6 +271,14 @@ export default function ClientsManagePage() {
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Client Dialog */}
+      <EditClientDialog
+        open={editClientOpen}
+        onOpenChange={setEditClientOpen}
+        client={selectedClient}
+        onSave={handleUpdateClient}
+      />
     </div>
   );
 }

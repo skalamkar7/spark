@@ -2,13 +2,16 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Heart, Car, Home, Shield, Plane, Building2, Edit, Trash2, Search } from "lucide-react";
+import { ChevronLeft, Heart, Car, Home, Shield, Plane, Building2, Edit, Trash2, Search, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { EditPolicyDialog } from "@/components/insurance/edit-policy-dialog";
+import { PaymentRecorder } from "@/components/insurance/payment-recorder";
 import { 
   InsurancePolicy, 
   Client, 
+  PaymentLog,
   getClientById, 
   formatCurrency, 
   formatDate,
@@ -37,6 +40,9 @@ export default function PoliciesManagePage() {
   const [selectedPolicy, setSelectedPolicy] = useState<InsurancePolicy | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
+  const [editPolicyOpen, setEditPolicyOpen] = useState(false);
+  const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
+  const [paymentLogs, setPaymentLogs] = useState<PaymentLog[]>([]);
 
   useEffect(() => {
     const currentUser = localStorage.getItem("currentUser");
@@ -49,10 +55,12 @@ export default function PoliciesManagePage() {
     const storedPolicies = localStorage.getItem("policies");
     const storedClients = localStorage.getItem("clients");
     const storedProviders = localStorage.getItem("providers");
+    const storedPayments = localStorage.getItem("paymentLogs");
 
     setPolicies(storedPolicies ? JSON.parse(storedPolicies) : mockPolicies);
     setClients(storedClients ? JSON.parse(storedClients) : mockClients);
     setProviders(storedProviders ? JSON.parse(storedProviders) : mockProviders);
+    setPaymentLogs(storedPayments ? JSON.parse(storedPayments) : []);
   }, [router]);
 
   // Filter and search policies
@@ -83,6 +91,19 @@ export default function PoliciesManagePage() {
   const TypeIcon = selectedPolicy ? typeIcons[selectedPolicy.type] : null;
 
   const insuranceTypes: InsuranceType[] = ["health", "auto", "home", "life", "travel", "business"];
+
+  const handleUpdatePolicy = (updatedPolicy: InsurancePolicy) => {
+    const updated = policies.map((p) => (p.id === updatedPolicy.id ? updatedPolicy : p));
+    setPolicies(updated);
+    setSelectedPolicy(updatedPolicy);
+    localStorage.setItem("policies", JSON.stringify(updated));
+  };
+
+  const handleRecordPayment = (payment: PaymentLog) => {
+    const updated = [...paymentLogs, payment];
+    setPaymentLogs(updated);
+    localStorage.setItem("paymentLogs", JSON.stringify(updated));
+  };
 
   if (!user) {
     return (
@@ -203,8 +224,21 @@ export default function PoliciesManagePage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="icon" className="h-8 w-8">
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => setEditPolicyOpen(true)}
+                      >
                         <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setRecordPaymentOpen(true)}
+                      >
+                        <DollarSign className="w-4 h-4" />
                       </Button>
                       <Button variant="destructive" size="icon" className="h-8 w-8">
                         <Trash2 className="w-4 h-4" />
@@ -322,6 +356,23 @@ export default function PoliciesManagePage() {
           </div>
         </div>
       </main>
+
+      {/* Edit Policy Dialog */}
+      <EditPolicyDialog
+        open={editPolicyOpen}
+        onOpenChange={setEditPolicyOpen}
+        policy={selectedPolicy}
+        onSave={handleUpdatePolicy}
+      />
+
+      {/* Record Payment Dialog */}
+      <PaymentRecorder
+        open={recordPaymentOpen}
+        onOpenChange={setRecordPaymentOpen}
+        policy={selectedPolicy}
+        clientName={selectedClient?.name || "Client"}
+        onRecordPayment={handleRecordPayment}
+      />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Plus, Users, FileText, AlertTriangle, Clock, Settings } from "lucide-react";
+import { LogOut, Plus, Users, FileText, AlertTriangle, Clock, Settings, BarChart3, History } from "lucide-react";
 import { Header } from "@/components/insurance/header";
 import { InteractiveStats } from "@/components/insurance/interactive-stats";
 import { ReminderList } from "@/components/insurance/reminder-list";
@@ -15,6 +15,8 @@ import {
   mockPolicies,
   InsurancePolicy,
   Client,
+  PaymentLog,
+  calculateClientRiskLevel,
 } from "@/lib/insurance-data";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +33,7 @@ export default function DashboardPage() {
   const [reminderFilter, setReminderFilter] = useState("7days");
   const [policies, setPolicies] = useState<InsurancePolicy[]>(mockPolicies);
   const [clients, setClients] = useState<Client[]>(mockClients);
+  const [paymentLogs, setPaymentLogs] = useState<PaymentLog[]>([]);
   const [addClientOpen, setAddClientOpen] = useState(false);
   const [addPolicyOpen, setAddPolicyOpen] = useState(false);
 
@@ -45,9 +48,11 @@ export default function DashboardPage() {
     // Load from localStorage or use mock data
     const storedPolicies = localStorage.getItem("policies");
     const storedClients = localStorage.getItem("clients");
+    const storedPayments = localStorage.getItem("paymentLogs");
 
     if (storedPolicies) setPolicies(JSON.parse(storedPolicies));
     if (storedClients) setClients(JSON.parse(storedClients));
+    if (storedPayments) setPaymentLogs(JSON.parse(storedPayments));
   }, [router]);
 
   if (!user) {
@@ -62,6 +67,11 @@ export default function DashboardPage() {
   }
 
   const reminders = getRemindersForFilter(policies, clients, reminderFilter);
+
+  // Calculate high-risk clients
+  const highRiskClients = clients.filter(
+    (client) => calculateClientRiskLevel(paymentLogs, client.id) === "high"
+  );
 
   const stats = {
     totalClients: clients.length,
@@ -129,6 +139,22 @@ export default function DashboardPage() {
             </Button>
             <Button
               variant="outline"
+              onClick={() => router.push("/analytics")}
+              className="gap-2"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Analytics
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => router.push("/payments-history")}
+              className="gap-2"
+            >
+              <History className="w-4 h-4" />
+              Payments
+            </Button>
+            <Button
+              variant="outline"
               onClick={handleLogout}
               className="gap-2"
             >
@@ -149,6 +175,29 @@ export default function DashboardPage() {
           onUrgentClick={() => setReminderFilter("3days")}
           onDueWeekClick={() => setReminderFilter("7days")}
         />
+
+        {/* Smart Recommendations */}
+        {highRiskClients.length > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-red-900">Payment Risk Alert</h3>
+                <p className="text-sm text-red-800 mt-1">
+                  {highRiskClients.length} client{highRiskClients.length !== 1 ? "s" : ""} have consistent late payment patterns.
+                  Consider sending early reminders to prevent future delays.
+                </p>
+                <Button
+                  size="sm"
+                  className="mt-3 bg-red-600 hover:bg-red-700"
+                  onClick={() => router.push("/analytics")}
+                >
+                  View Payment Analytics
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Reminders */}
         <div className="space-y-4">

@@ -158,3 +158,32 @@ export const dummyDataTracker = pgTable("dummy_data_tracker", {
   isDummy: boolean("is_dummy").default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+// Password reset tables
+export const passwordResets = pgTable("password_resets", {
+  id: text("id").primaryKey().default(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const passwordChangeHistory = pgTable("password_change_history", {
+  id: text("id").primaryKey().default(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  changedBy: text("changed_by").references(() => user.id, { onDelete: "set null" }),
+  changeType: text("change_type").notNull(), // 'self_requested', 'admin_reset', 'forced_change'
+  reason: text("reason"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const forcedPasswordChange = pgTable("forced_password_change", {
+  id: text("id").primaryKey().default(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().unique().references(() => user.id, { onDelete: "cascade" }),
+  resetBy: text("reset_by").references(() => user.id, { onDelete: "set null" }),
+  temporaryPassword: text("temporary_password"),
+  mustChangeBy: timestamp("must_change_by").notNull(),
+  changedAt: timestamp("changed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});

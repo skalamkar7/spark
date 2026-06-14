@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { AlertCircle, Check, X, Mail, Phone } from 'lucide-react'
+import { AlertCircle, Check, X, Mail, Phone, Key } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
+import { AdminPasswordResetDialog } from './admin-password-reset-dialog'
 
 interface User {
   id: string
@@ -41,6 +42,8 @@ export function AdminDashboardClient({
   const [actionDialog, setActionDialog] = useState<'approve' | 'reject' | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
   const [loading, setLoading] = useState(false)
+  const [passwordResetOpen, setPasswordResetOpen] = useState(false)
+  const [selectedUserForReset, setSelectedUserForReset] = useState<User | null>(null)
 
   const handleApprove = async () => {
     if (!selectedUser) return
@@ -165,17 +168,31 @@ export function AdminDashboardClient({
             ) : (
               approvedUsers.map(u => (
                 <Card key={u.id} className="p-6 bg-green-50 border-green-200">
-                  <div className="flex items-center gap-4">
-                    <Badge className="bg-green-600">Approved</Badge>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">
-                        {u.name || u.email}
-                      </h3>
-                      <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
-                        <Mail className="w-4 h-4" />
-                        {u.email}
-                      </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4 flex-1">
+                      <Badge className="bg-green-600">Approved</Badge>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900">
+                          {u.name || u.email}
+                        </h3>
+                        <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
+                          <Mail className="w-4 h-4" />
+                          {u.email}
+                        </p>
+                      </div>
                     </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedUserForReset(u)
+                        setPasswordResetOpen(true)
+                      }}
+                      className="gap-2"
+                    >
+                      <Key className="w-4 h-4" />
+                      Reset Password
+                    </Button>
                   </div>
                 </Card>
               ))
@@ -277,6 +294,20 @@ export function AdminDashboardClient({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Password Reset Dialog */}
+      {selectedUserForReset && (
+        <AdminPasswordResetDialog
+          userId={selectedUserForReset.id}
+          userEmail={selectedUserForReset.email}
+          userName={selectedUserForReset.name || 'Agent'}
+          isOpen={passwordResetOpen}
+          onOpenChange={setPasswordResetOpen}
+          onSuccess={() => {
+            setSelectedUserForReset(null)
+          }}
+        />
       )}
     </div>
   )
